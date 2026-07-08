@@ -1,0 +1,16 @@
+apiVersion: 1
+
+datasources:
+  - name: BAM PostgreSQL
+    uid: bam-postgres
+    type: postgres
+    access: proxy
+    url: ${GRAFANA_DB_HOST}
+    database: ${GRAFANA_DB_NAME}
+    user: ${GRAFANA_DB_USER}
+    secureJsonData:
+      password: ${GRAFANA_DB_PASSWORD}
+    jsonData:
+      sslmode: ${GRAFANA_DB_SSLMODE}
+      postgresVersion: 1600
+      timescaledb: false

@@ -1,0 +1,19 @@
+[Unit]
+Description=BAM Prefect pipeline scheduler
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/bam
+EnvironmentFile=/etc/bam/bam.env
+ExecStart=/opt/bam/.venv/bin/python /opt/bam/bam_pipeline.py
+Restart=always
+RestartSec=10
+User=root
+Group=root
+StandardOutput=append:/var/log/bam/bam-pipeline.log
+StandardError=append:/var/log/bam/bam-pipeline.log
+
+[Install]
+WantedBy=multi-user.target

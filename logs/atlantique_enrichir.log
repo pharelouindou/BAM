@@ -1,0 +1,14 @@
+============================================================
+  BAM · Enrichissement grille nationale · 2026-05-13
+  Filtre département : Atlantique
+============================================================
+
+  1635 points à enrichir
+
+→ Collecte altitudes (Open-Elevation batch)...
+Traceback (most recent call last):
+  File "/home/ayeyemiouindou/BeninAquaMap%20-%20BAM/process/enrichir_grille.py", line 393, in <module>
+    run()
+  File "/home/ayeyemiouindou/BeninAquaMap%20-%20BAM/process/enrichir_grille.py", line 286, in run
+    time.sleep(2)
+KeyboardInterrupt

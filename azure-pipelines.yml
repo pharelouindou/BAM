@@ -1,0 +1,77 @@
+trigger: none
+
+schedules:
+  - cron: "0 2 * * 6"
+    displayName: Collecte hebdomadaire BAM - Samedi
+    branches:
+      include:
+        - main
+    always: true
+
+variables:
+  - group: bam-secrets
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+  - job: collecte_bam
+    displayName: Collecte BAM - Tout le Bénin
+    timeoutInMinutes: 120
+    strategy:
+      matrix:
+        Alibori:
+          DEPT: Alibori
+        Atacora:
+          DEPT: Atacora
+        Atlantique:
+          DEPT: Atlantique
+        Borgou:
+          DEPT: Borgou
+        Collines:
+          DEPT: Collines
+        Couffo:
+          DEPT: Couffo
+        Donga:
+          DEPT: Donga
+        Littoral:
+          DEPT: Littoral
+        Mono:
+          DEPT: Mono
+        Oueme:
+          DEPT: Oueme
+        Plateau:
+          DEPT: Plateau
+        Zou:
+          DEPT: Zou
+      maxParallel: 1
+
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: "3.12"
+        displayName: Python 3.12
+
+      - script: pip install -r requirements.txt
+        displayName: Installer dépendances
+
+      - script: python -c "import os,json,pathlib; creds=os.environ.get('GEE_CREDENTIALS'); parsed=json.loads(creds); p=pathlib.Path.home()/'.config'/'earthengine'; p.mkdir(parents=True,exist_ok=True); open(p/'credentials','w').write(json.dumps(parsed)); print('GEE credentials OK')"
+        displayName: Auth GEE
+        env:
+          GEE_CREDENTIALS: $(GEE_CREDENTIALS)
+
+      - script: |
+          echo "=== Communes: $(DEPT) ==="
+          python process/enrichir_communes_geojson.py --dept $(DEPT)
+        displayName: Communes $(DEPT)
+        env:
+          DATABASE_URL: $(DATABASE_URL)
+          GEE_PROJECT: $(GEE_PROJECT)
+
+      - script: |
+          echo "=== Satellite GEE + historique: $(DEPT) ==="
+          python process/analyser_grille.py --dept $(DEPT) --force
+        displayName: Satellite-GEE $(DEPT)
+        env:
+          DATABASE_URL: $(DATABASE_URL)
+          GEE_PROJECT: $(GEE_PROJECT)

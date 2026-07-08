@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAM · AquaMap Bénin</title>
+<style>
+:root{
+  --bg:#f4f3ef;--surface:#ffffff;--border:#e2dfd8;--border2:#c8c4bc;
+  --green:#3b6d11;--green-l:#eaf3de;--green-m:#639922;--green-d:#27500a;
+  --amber:#854f0b;--amber-l:#faeeda;--amber-m:#ba7517;
+  --red:#a32d2d;--red-l:#fcebeb;--red-m:#e24b4a;
+  --blue:#0c447c;--blue-l:#e6f1fb;--blue-m:#378add;
+  --text:#1a1a18;--text2:#5a5a56;--text3:#9a9a94;
+  --mono:'Courier New',monospace;--sans:system-ui,sans-serif;
+  --r8:8px;--r12:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── HEADER ── */
+.hdr{height:50px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0}
+.logo{font-size:15px;font-weight:600;color:var(--green);letter-spacing:-.3px}
+.logo em{color:var(--text3);font-style:normal;font-weight:400}
+.hkpis{display:flex;gap:20px;margin-left:auto}
+.hk{text-align:right}
+.hkv{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--green);line-height:1}
+.hkv.a{color:var(--amber)}.hkv.r{color:var(--red)}
+.hkl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
+.live{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green-m);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── FILTRES ── */
+.fbar{height:38px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:6px;flex-shrink:0}
+.fb{font-size:11px;padding:3px 11px;border-radius:20px;border:1px solid var(--border2);background:transparent;cursor:pointer;color:var(--text2);transition:all .15s}
+.fb:hover{background:var(--bg)}
+.fb.on-all{background:var(--text);border-color:var(--text);color:#fff}
+.fb.on-g{background:var(--green-l);border-color:var(--green);color:var(--green)}
+.fb.on-a{background:var(--amber-l);border-color:var(--amber);color:var(--amber)}
+.fb.on-r{background:var(--red-l);border-color:var(--red);color:var(--red)}
+.fb.on-b{background:var(--blue-l);border-color:var(--blue);color:var(--blue)}
+.fsep{width:1px;height:18px;background:var(--border);margin:0 4px}
+.flayer{display:flex;align-items:center;gap:5px;margin-left:auto;font-size:11px;color:var(--text3)}
+.flayer input[type=checkbox]{accent-color:var(--green-m);cursor:pointer}
+.dbadge{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;border:1px solid var(--amber);background:var(--amber-l);color:var(--amber);margin-left:8px}
+.dbadge.live{border-color:var(--green);background:var(--green-l);color:var(--green)}
+
+/* ── WORKSPACE ── */
+.ws{display:flex;flex:1;overflow:hidden}
+
+/* ── CARTE ── */
+.mcol{flex:0 0 380px;background:var(--surface);border-right:1px solid var(--border);position:relative;overflow:hidden}
+.mcol svg{width:100%;height:100%}
+.dep{stroke:#c8c4bc;stroke-width:.8;cursor:pointer;transition:filter .15s}
+.dep:hover{filter:brightness(.9)}
+.dep.sel{stroke:var(--green);stroke-width:2;filter:brightness(.85)}
+.dlabel{fill:#aaa8a0;font-family:system-ui,sans-serif;font-size:8.5px;text-anchor:middle;pointer-events:none;user-select:none}
+
+/* Légende */
+.mleg{position:absolute;bottom:10px;left:10px;background:rgba(255,255,255,.96);border:1px solid var(--border);border-radius:var(--r8);padding:8px 12px;font-size:11px}
+.ml-t{color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+.ml-row{display:flex;align-items:center;gap:7px;color:var(--text2);margin-bottom:3px}
+.ml-row:last-child{margin-bottom:0}
+.ml-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ml-sq{width:10px;height:5px;border-radius:2px;flex-shrink:0}
+
+/* ── PANNEAU DROIT ── */
+.rcol{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.view{flex:1;overflow:auto;display:none;flex-direction:column}
+.view.on{display:flex}
+
+/* Accueil */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:6px;padding:40px;text-align:center}
+.empty-ico{width:44px;height:44px;border:1.5px solid currentColor;border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:.4;margin-bottom:4px}
+
+/* En-tête département */
+.dh{padding:13px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.dh-back{font-size:11px;color:var(--text3);cursor:pointer;border:none;background:none;padding:0;margin-bottom:7px;display:inline-flex;align-items:center;gap:3px}
+.dh-back:hover{color:var(--text)}
+.dh-name{font-size:17px;font-weight:500}
+.dh-meta{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* Tabs internes */
+.itabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+.itab{padding:8px 16px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s}
+.itab.on{color:var(--green);border-bottom-color:var(--green);background:var(--surface)}
+.itab:hover:not(.on){color:var(--text)}
+
+/* Liste sites */
+.slist{flex:1;overflow:auto}
+.srow{padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;align-items:center;gap:9px;transition:background .12s}
+.srow:hover,.srow.on{background:var(--bg)}
+.srow.on{border-left:2px solid var(--green)}
+.sr-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sr-info{flex:1;min-width:0}
+.sr-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-sub{font-size:10px;color:var(--text3);margin-top:1px;font-family:var(--mono)}
+.sr-sc{font-family:var(--mono);font-size:13px;font-weight:600;flex-shrink:0}
+.cg{color:var(--green-m)}.ca{color:var(--amber-m)}.cr{color:var(--red-m)}
+
+/* Fiche détail */
+.det{flex:1;overflow:auto;padding:16px}
+.det-back{font-size:11px;color:var(--text3);cursor:pointer;border:none;background:none;padding:0;margin-bottom:11px;display:inline-flex;align-items:center;gap:3px}
+.det-back:hover{color:var(--text)}
+.det-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:13px}
+.det-name{font-size:16px;font-weight:500;line-height:1.3}
+.badge{font-size:10px;padding:3px 10px;border-radius:20px;white-space:nowrap;font-weight:500;font-family:var(--mono)}
+.bg-g{background:var(--green-l);color:var(--green-d);border:1px solid #97c459}
+.bg-a{background:var(--amber-l);color:var(--amber);border:1px solid #ef9f27}
+.bg-r{background:var(--red-l);color:var(--red);border:1px solid #f09595}
+.bg-b{background:var(--blue-l);color:var(--blue);border:1px solid #85b7eb}
+
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:13px}
+.kpi{background:var(--bg);border-radius:var(--r8);padding:9px 11px}
+.kpiv{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--text);line-height:1}
+.kpiv.g{color:var(--green)}.kpiv.a{color:var(--amber)}.kpiv.r{color:var(--red)}
+.kpil{font-size:10px;color:var(--text3);margin-top:2px}
+
+.sec{font-size:9px;text-transform:uppercase;letter-spacing:1.3px;color:var(--text3);margin-bottom:7px;font-weight:500}
+.bwrap{margin-bottom:6px}
+.bhead{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px}
+.bhead span:last-child{font-family:var(--mono);color:var(--text)}
+.btrack{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.bfill{height:100%;border-radius:3px;transition:width .5s}
+
+.srcs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:11px}
+.src{font-size:10px;font-family:var(--mono);padding:4px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text3);background:var(--bg);display:flex;align-items:center;gap:4px}
+.src.ok{border-color:var(--green);color:var(--green-d);background:var(--green-l)}
+.src.no{border-color:var(--amber);color:var(--amber);background:var(--amber-l)}
+.sdot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+.recbox{font-size:12px;color:var(--text2);line-height:1.7;background:var(--bg);border-radius:var(--r8);padding:10px 12px;border-left:3px solid var(--border)}
+.recbox.g{border-left-color:var(--green)}.recbox.a{border-left-color:var(--amber)}.recbox.r{border-left-color:var(--red)}
+
+/* Graphique */
+.chwrap{border:1px solid var(--border);border-radius:var(--r8);padding:11px;background:var(--surface);margin:11px 0}
+.ch-t{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
+.ch-note{font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono)}
+
+/* Résumé OSM */
+.osm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:11px}
+.osm-card{background:var(--bg);border-radius:var(--r8);padding:8px 10px;text-align:center}
+.osm-v{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--blue-m)}
+.osm-l{font-size:10px;color:var(--text3);margin-top:2px}
+
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="logo">BAM · <em>Benin</em>AquaMap</div>
+  <div class="hkpis">
+    <div class="hk"><div class="hkv" id="h-total">1 860</div><div class="hkl">points grille</div></div>
+    <div class="hk"><div class="hkv" id="h-sites">14</div><div class="hkl">bas-fonds identifiés</div></div>
+    <div class="hk"><div class="hkv" id="h-osm">—</div><div class="hkl">points eau OSM</div></div>
+    <div class="hk"><div class="hkv a" id="h-score">32</div><div class="hkl">score moyen</div></div>
+  </div>
+  <div class="live"><div class="dot"></div><span id="live-txt">Saison sèche · Avril 2026</span></div>
+  <div class="dbadge" id="data-badge">DONNÉES RÉELLES</div>
+</div>
+
+<div class="fbar">
+  <button class="fb on-all" id="fb-all" onclick="setF('all',this)">Tous</button>
+  <div class="fsep"></div>
+  <button class="fb" id="fb-high" onclick="setF('high',this)">Priorité haute</button>
+  <button class="fb" id="fb-med"  onclick="setF('med',this)">Moyenne</button>
+  <button class="fb" id="fb-low"  onclick="setF('low',this)">À étudier</button>
+  <div class="fsep"></div>
+  <button class="fb" id="fb-osm"  onclick="setF('osm',this)">Points eau OSM</button>
+  <div class="flayer">
+    <input type="checkbox" id="chk-grille" checked onchange="toggleGrille(this.checked)">
+    <label for="chk-grille" style="cursor:pointer">Grille satellite</label>
+  </div>
+</div>
+
+<div class="ws">
+
+<!-- ══ CARTE ══ -->
+<div class="mcol">
+<svg id="svg-map" viewBox="0 0 240 490" xmlns="http://www.w3.org/2000/svg">
+
+<!-- Départements du Bénin — formes géographiques fidèles -->
+<path id="dp-Alibori"    class="dep" fill="#d0e8b0" d="M58,14 L184,14 L192,24 L196,54 L188,86 L172,96 L150,100 L110,96 L74,88 L58,68 L46,42 Z" onclick="cDep('Alibori')"/>
+<text class="dlabel" x="122" y="57">Alibori</text>
+
+<path id="dp-Atacora"    class="dep" fill="#dddbd2" d="M14,44 L58,68 L74,88 L70,118 L58,152 L42,166 L24,170 L8,152 L6,100 L10,62 Z" onclick="cDep('Atacora')"/>
+<text class="dlabel" x="36" y="116">Atacora</text>
+
+<path id="dp-Borgou"     class="dep" fill="#c4dcf4" d="M74,88 L150,100 L172,96 L188,86 L196,54 L200,120 L196,156 L180,174 L156,180 L120,178 L90,168 L70,152 L70,118 Z" onclick="cDep('Borgou')"/>
+<text class="dlabel" x="138" y="138">Borgou</text>
+
+<path id="dp-Donga"      class="dep" fill="#dddbd2" d="M24,170 L42,166 L58,152 L70,152 L70,168 L90,168 L90,196 L76,210 L52,216 L28,204 L18,186 Z" onclick="cDep('Donga')"/>
+<text class="dlabel" x="54" y="193">Donga</text>
+
+<path id="dp-Collines"   class="dep" fill="#d0e8b0" d="M90,168 L120,178 L156,180 L180,174 L196,156 L200,200 L196,232 L172,248 L148,256 L120,250 L100,240 L90,218 L90,196 Z" onclick="cDep('Collines')"/>
+<text class="dlabel" x="144" y="214">Collines</text>
+
+<path id="dp-Zou"        class="dep" fill="#fce8c4" d="M90,218 L100,240 L120,250 L148,256 L172,248 L174,280 L166,306 L148,318 L120,322 L96,314 L80,294 L78,264 L82,240 Z" onclick="cDep('Zou')"/>
+<text class="dlabel" x="128" y="286">Zou</text>
+
+<path id="dp-Couffo"     class="dep" fill="#dddbd2" d="M52,216 L76,210 L90,218 L82,240 L78,264 L68,278 L50,280 L38,264 L40,242 Z" onclick="cDep('Couffo')"/>
+<text class="dlabel" x="60" y="250">Couffo</text>
+
+<path id="dp-Mono"       class="dep" fill="#dddbd2" d="M26,280 L50,280 L68,278 L78,264 L72,300 L62,320 L44,330 L26,318 L18,300 Z" onclick="cDep('Mono')"/>
+<text class="dlabel" x="46" y="306">Mono</text>
+
+<path id="dp-Plateau"    class="dep" fill="#fce8c4" d="M120,322 L148,318 L166,306 L174,280 L180,310 L178,338 L162,354 L138,358 L118,348 L110,330 Z" onclick="cDep('Plateau')"/>
+<text class="dlabel" x="147" y="330">Plateau</text>
+
+<path id="dp-Oueme"      class="dep" fill="#fce8c4" d="M118,348 L138,358 L162,354 L178,338 L188,358 L184,386 L168,400 L148,406 L130,396 L116,374 Z" onclick="cDep('Oueme')"/>
+<text class="dlabel" x="153" y="378">Ouémé</text>
+
+<path id="dp-Atlantique" class="dep" fill="#dff0d0" d="M62,320 L72,300 L78,264 L80,294 L96,314 L110,330 L116,374 L100,392 L80,400 L60,392 L46,372 L44,348 L44,330 Z" onclick="cDep('Atlantique')"/>
+<text class="dlabel" x="80" y="362">Atlantique</text>
+
+<path id="dp-Littoral"   class="dep" fill="#b5d4f4" d="M80,400 L100,392 L116,374 L118,400 L106,420 L80,420 Z" onclick="cDep('Littoral')"/>
+<text class="dlabel" x="98" y="408">Littoral</text>
+
+<!-- Côte -->
+<line x1="28" y1="430" x2="200" y2="430" stroke="#b5d4f4" stroke-width="1.2" stroke-dasharray="5 3"/>
+<text x="112" y="442" fill="#378add" font-size="7.5" text-anchor="middle" font-family="sans-serif">Golfe du Bénin</text>
+
+<!-- Villes repères -->
+<circle cx="112" cy="415" r="2.5" fill="#378add"/>
+<text x="112" y="428" fill="#378add" font-size="7" text-anchor="middle" font-family="sans-serif">Cotonou</text>
+<circle cx="170" cy="392" r="1.5" fill="#854f0b"/>
+<text x="170" y="400" fill="#854f0b" font-size="7" text-anchor="middle" font-family="sans-serif">Porto-Novo</text>
+<circle cx="136" cy="144" r="1.5" fill="#5f5e5a"/>
+<text x="148" y="148" fill="#5f5e5a" font-size="7" font-family="sans-serif">Parakou</text>
+<text x="166" y="14" fill="#3b6d11" font-size="7" font-family="sans-serif">Malanville ↑</text>
+<text x="8" y="14" fill="#888780" font-size="7" font-family="sans-serif">Natitingou</text>
+
+<!-- Flèche nord -->
+<line x1="120" y1="14" x2="120" y2="8" stroke="#888780" stroke-width=".8"/>
+<polygon points="120,6 117,12 123,12" fill="#888780"/>
+
+<!-- Couches de données — injectées par JS -->
+<g id="layer-grille"></g>
+<g id="layer-osm"></g>
+<g id="layer-sites"></g>
+</svg>
+
+<div class="mleg">
+  <div class="ml-t">Couches</div>
+  <div class="ml-row"><div class="ml-dot" style="background:#639922"></div>Bas-fond priorité haute</div>
+  <div class="ml-row"><div class="ml-dot" style="background:#ba7517"></div>Bas-fond moyenne</div>
+  <div class="ml-row"><div class="ml-dot" style="background:#e24b4a"></div>Bas-fond à étudier</div>
+  <div class="ml-row" style="margin-top:4px"><div class="ml-dot" style="background:#378add;opacity:.6;width:6px;height:6px"></div>Point eau OSM</div>
+  <div class="ml-row"><div class="ml-sq" style="background:#639922;opacity:.25"></div>Grille NDWI humide</div>
+</div>
+</div>
+
+<!-- ══ PANNEAU DROIT ══ -->
+<div class="rcol">
+
+  <!-- Vue accueil -->
+  <div class="view on" id="v-home">
+    <div class="empty">
+      <div class="empty-ico">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l3 3" stroke-linecap="round"/></svg>
+      </div>
+      <span style="font-size:14px;font-weight:500">Sélectionner un département</span>
+      <span style="font-size:12px;max-width:220px">Cliquer sur la carte pour voir les bas-fonds, les points d'eau OSM et les données satellite</span>
+    </div>
+    <!-- Résumé national -->
+    <div style="padding:16px;border-top:1px solid var(--border);flex-shrink:0">
+      <div class="sec" style="margin-bottom:10px">Vue nationale — sources de données</div>
+      <div class="osm-grid">
+        <div class="osm-card"><div class="osm-v" id="sum-grille">1 860</div><div class="osm-l">Points grille satellite</div></div>
+        <div class="osm-card"><div class="osm-v" id="sum-sites">14</div><div class="osm-l">Bas-fonds identifiés</div></div>
+        <div class="osm-card"><div class="osm-v" style="color:var(--amber-m)" id="sum-osm">—</div><div class="osm-l">Points eau OSM</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.7;padding:9px 12px;background:var(--bg);border-radius:var(--r8);border-left:3px solid var(--border)">
+        <strong style="color:var(--text2)">Données collectées en saison sèche (avril 2026).</strong> Les NDWI négatifs sont normaux — à relancer en juillet pour identifier les zones humides permanentes. Les points OSM et le relief SRTM enrichissent l'analyse satellite.
+      </div>
+    </div>
+  </div>
+
+  <!-- Vue département -->
+  <div class="view" id="v-dep">
+    <div class="dh">
+      <button class="dh-back" onclick="goHome()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 3L5 6.5l3 3.5"/></svg>
+        Vue nationale
+      </button>
+      <div class="dh-name" id="dep-name">—</div>
+      <div class="dh-meta" id="dep-meta">—</div>
+    </div>
+    <div class="itabs">
+      <button class="itab on" id="itab-sites" onclick="swITab('sites')">Bas-fonds</button>
+      <button class="itab" id="itab-osm"   onclick="swITab('osm')">Points eau OSM</button>
+    </div>
+    <div class="slist" id="site-list"></div>
+    <div class="slist" id="osm-list" style="display:none"></div>
+  </div>
+
+  <!-- Vue fiche détail -->
+  <div class="view" id="v-site">
+    <div class="det" id="det-content"></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DONNÉES
+//  Structure alimentée par la collecte Python (main.py)
+//  Remplacer par fetch('/api/v1/sites') quand l'API tourne
+// ═══════════════════════════════════════════════════════════
+
+let SITES = [
+  {id:0,nom:"Bas-fond de Malanville",dep:"Alibori",surf:380,score:32,ndwi:-0.369,ndvi:0.237,ph:6.8,pluie7:14.7,hum:0.38,cost:48,cls:"low",
+   cx:164,cy:38,rec:"NDWI saison sèche : -0.37. Relancer en juillet. Nappe < 3m confirmée. 420 familles bénéficiaires potentielles.",
+   history:[{d:"Oct",v:0.58},{d:"Nov",v:0.72},{d:"Déc",v:0.69},{d:"Jan",v:0.55},{d:"Fév",v:0.44},{d:"Avr",v:-0.37}]},
+  {id:1,nom:"Plaine de Karimama",dep:"Alibori",surf:210,score:32,ndwi:-0.374,ndvi:0.244,ph:6.5,pluie7:12.4,hum:0.31,cost:32,cls:"low",
+   cx:148,cy:58,rec:"Sol alluvionnaire fertile. À réévaluer en saison des pluies pour confirmer le potentiel irrigable.",
+   history:[{d:"Oct",v:0.52},{d:"Nov",v:0.65},{d:"Déc",v:0.61},{d:"Jan",v:0.48},{d:"Fév",v:0.38},{d:"Avr",v:-0.37}]},
+  {id:2,nom:"Mares de Gogounou",dep:"Alibori",surf:145,score:32,ndwi:-0.395,ndvi:0.211,ph:6.1,pluie7:8.6,hum:0.24,cost:28,cls:"low",
+   cx:96,cy:68,rec:"Humidité saisonnière. Mission terrain recommandée avant investissement.",
+   history:[{d:"Oct",v:0.40},{d:"Nov",v:0.51},{d:"Déc",v:0.48},{d:"Jan",v:0.35},{d:"Fév",v:0.26},{d:"Avr",v:-0.39}]},
+  {id:3,nom:"Vallée Alibori Sud",dep:"Borgou",surf:520,score:32,ndwi:-0.428,ndvi:0.250,ph:6.6,pluie7:21.0,hum:0.42,cost:65,cls:"low",
+   cx:120,cy:128,rec:"Plus grand site Borgou. 1 200 familles bénéficiaires. NDWI actuellement négatif — saison sèche.",
+   history:[{d:"Oct",v:0.58},{d:"Nov",v:0.69},{d:"Déc",v:0.64},{d:"Jan",v:0.52},{d:"Fév",v:0.42},{d:"Avr",v:-0.43}]},
+  {id:4,nom:"Bas-fond Parakou-Est",dep:"Borgou",surf:290,score:32,ndwi:-0.421,ndvi:0.277,ph:6.3,pluie7:16.8,hum:0.33,cost:41,cls:"low",
+   cx:104,cy:150,rec:"Proche marché Parakou. Accès facile. Débouché commercial direct.",
+   history:[{d:"Oct",v:0.50},{d:"Nov",v:0.61},{d:"Déc",v:0.57},{d:"Jan",v:0.44},{d:"Fév",v:0.34},{d:"Avr",v:-0.42}]},
+  {id:5,nom:"Zone humide N-Dali",dep:"Borgou",surf:175,score:31,ndwi:-0.456,ndvi:0.308,ph:6.0,pluie7:11.2,hum:0.26,cost:35,cls:"low",
+   cx:138,cy:138,rec:"Rétention eau 4 mois/an confirmée par historique S2. Mission terrain recommandée.",
+   history:[{d:"Oct",v:0.44},{d:"Nov",v:0.54},{d:"Déc",v:0.50},{d:"Jan",v:0.38},{d:"Fév",v:0.28},{d:"Avr",v:-0.46}]},
+  {id:6,nom:"Vallée Pendjari-Ouest",dep:"Atacora",surf:160,score:32,ndwi:-0.375,ndvi:0.231,ph:5.9,pluie7:9.8,hum:0.27,cost:44,cls:"low",
+   cx:36,cy:102,rec:"Zone tampon parc Pendjari. Vérification réglementaire nécessaire avant aménagement.",
+   history:[{d:"Oct",v:0.46},{d:"Nov",v:0.55},{d:"Déc",v:0.51},{d:"Jan",v:0.39},{d:"Fév",v:0.30},{d:"Avr",v:-0.38}]},
+  {id:7,nom:"Bas-fond Tanguiéta",dep:"Atacora",surf:95,score:32,ndwi:-0.399,ndvi:0.215,ph:5.6,pluie7:5.4,hum:0.18,cost:52,cls:"low",
+   cx:30,cy:130,rec:"Humidité faible même en saison des pluies. Sol partiellement rocheux. À réévaluer.",
+   history:[{d:"Oct",v:0.30},{d:"Nov",v:0.38},{d:"Déc",v:0.34},{d:"Jan",v:0.24},{d:"Fév",v:0.18},{d:"Avr",v:-0.40}]},
+  {id:8,nom:"Bas-fond de Savalou",dep:"Collines",surf:445,score:31,ndwi:-0.460,ndvi:0.310,ph:6.7,pluie7:24.6,hum:0.46,cost:55,cls:"low",
+   cx:112,cy:200,rec:"NDWI saison sèche : -0.46. Historique confirme NDWI > 0.7 en nov-déc. PRIORITÉ 1 nationale à relancer en juillet.",
+   history:[{d:"Oct",v:0.66},{d:"Nov",v:0.78},{d:"Déc",v:0.74},{d:"Jan",v:0.62},{d:"Fév",v:0.50},{d:"Avr",v:-0.46}]},
+  {id:9,nom:"Bas-fond de Dassa",dep:"Collines",surf:310,score:32,ndwi:-0.388,ndvi:0.290,ph:6.4,pluie7:19.2,hum:0.36,cost:47,cls:"low",
+   cx:124,cy:218,rec:"Site stratégique centre-Bénin. Oignon, igname, cultures vivrières. Population agricole dense.",
+   history:[{d:"Oct",v:0.56},{d:"Nov",v:0.67},{d:"Déc",v:0.63},{d:"Jan",v:0.50},{d:"Fév",v:0.40},{d:"Avr",v:-0.39}]},
+  {id:10,nom:"Mare de Bohicon",dep:"Zou",surf:180,score:33,ndwi:-0.323,ndvi:0.265,ph:6.2,pluie7:15.0,hum:0.30,cost:29,cls:"low",
+   cx:92,cy:280,rec:"NDWI le moins négatif de la liste (saison sèche). Accès excellent. Maraîchage haute valeur.",
+   history:[{d:"Oct",v:0.50},{d:"Nov",v:0.61},{d:"Déc",v:0.57},{d:"Jan",v:0.44},{d:"Fév",v:0.34},{d:"Avr",v:-0.32}]},
+  {id:11,nom:"Zone Djidja-Covè",dep:"Zou",surf:230,score:31,ndwi:-0.464,ndvi:0.282,ph:6.1,pluie7:12.8,hum:0.28,cost:38,cls:"low",
+   cx:104,cy:298,rec:"Potentiel validé par images multi-temporelles. Foncier à clarifier avant aménagement.",
+   history:[{d:"Oct",v:0.47},{d:"Nov",v:0.58},{d:"Déc",v:0.54},{d:"Jan",v:0.41},{d:"Fév",v:0.31},{d:"Avr",v:-0.46}]},
+  {id:12,nom:"Bas-fond Grand-Popo",dep:"Mono",surf:125,score:34,ndwi:-0.158,ndvi:0.198,ph:6.0,pluie7:9.2,hum:0.22,cost:36,cls:"low",
+   cx:36,cy:316,rec:"NDWI le plus proche de 0 — zone côtière avec nappe haute. Risque salinité à surveiller.",
+   history:[{d:"Oct",v:0.40},{d:"Nov",v:0.50},{d:"Déc",v:0.46},{d:"Jan",v:0.34},{d:"Fév",v:0.26},{d:"Avr",v:-0.16}]},
+  {id:13,nom:"Zone humide Porto-Novo",dep:"Oueme",surf:70,score:33,ndwi:-0.288,ndvi:0.224,ph:5.8,pluie7:7.8,hum:0.20,cost:85,cls:"low",
+   cx:144,cy:378,rec:"Pression urbaine forte. Foncier complexe. Coût d'activation très élevé. Déconseillé phase 1.",
+   history:[{d:"Oct",v:0.36},{d:"Nov",v:0.45},{d:"Déc",v:0.41},{d:"Jan",v:0.30},{d:"Fév",v:0.22},{d:"Avr",v:-0.29}]},
+];
+
+// Points OSM simulés — remplacer par SELECT * FROM points_eau_osm via API
+const OSM_POINTS = [
+  {id:1001,type:"riviere",nom:"Fleuve Niger",dep:"Alibori",lat:11.87,lon:3.39,cx:168,cy:34},
+  {id:1002,type:"riviere",nom:"Rivière Alibori",dep:"Alibori",lat:10.5,lon:2.8,cx:110,cy:95},
+  {id:1003,type:"riviere",nom:"Rivière Mékrou",dep:"Alibori",lat:11.2,lon:2.5,cx:90,cy:72},
+  {id:1004,type:"riviere",nom:"Fleuve Pendjari",dep:"Atacora",lat:10.8,lon:1.2,cx:34,cy:82},
+  {id:1005,type:"plan_eau",nom:"Mare de Banikoara",dep:"Alibori",lat:11.3,lon:2.44,cx:86,cy:80},
+  {id:1006,type:"riviere",nom:"Rivière Ouémé",dep:"Borgou",lat:9.8,lon:2.6,cx:118,cy:132},
+  {id:1007,type:"riviere",nom:"Rivière Zou",dep:"Zou",lat:7.4,lon:2.1,cx:108,cy:290},
+  {id:1008,type:"zone_humide",nom:"Lac Nokoué",dep:"Atlantique",lat:6.4,lon:2.4,cx:120,cy:395},
+  {id:1009,type:"lac",nom:"Lac Ahémé",dep:"Couffo",lat:6.45,lon:1.95,cx:68,cy:340},
+  {id:1010,type:"riviere",nom:"Rivière Mono",dep:"Mono",lat:6.5,lon:1.7,cx:40,cy:332},
+];
+
+const STATIC_SITES = SITES.map(s => ({...s, history:[...s.history]}));
+const API_BASE_URL = "http://localhost:8001";
+
+const COL = {high:"#639922",med:"#ba7517",low:"#e24b4a"};
+const BGLBL = {high:"Haute priorité",med:"Priorité moyenne",low:"À étudier"};
+const BGCLS = {high:"bg-g",med:"bg-a",low:"bg-r"};
+const OSMCOL = {riviere:"#378add",plan_eau:"#0c447c",zone_humide:"#1d9e75",lac:"#185fa5",mare:"#4a9eff",puits:"#854f0b",autre:"#888780"};
+
+let curF = "all", curDep = null, curSite = null, showGrille = true, curITab = "sites";
+let GRILLE_BASFONDS = [];   // Points bas-fonds chargés depuis l'API
+
+// ── Conversion coordonnées GPS → SVG (viewBox 240×490) ──────────────────
+// Bénin : lat 6.2–12.4, lon 0.8–3.8
+function latToY(lat) {
+  return Math.round(((12.4 - lat) / (12.4 - 6.2)) * 476 + 7);
+}
+function lonToX(lon) {
+  return Math.round(((lon - 0.8) / (3.8 - 0.8)) * 226 + 7);
+}
+
+async function chargerGrille() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/grille/bas-fonds?limit=2000`);
+    if (!res.ok) return;
+    GRILLE_BASFONDS = await res.json();
+    renderGrille();
+
+    // Mettre à jour KPI total points
+    const statsRes = await fetch(`${API_BASE_URL}/grille/stats`);
+    if (statsRes.ok) {
+      const st = await statsRes.json();
+      if (st.total_points) document.getElementById("h-total").textContent = st.total_points;
+    }
+  } catch (e) {
+    console.warn("Grille API indisponible :", e);
+  }
+}
+
+function toNum(v, d=0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : d;
+}
+
+function mapPrioriteToCls(priorite) {
+  if (priorite === "haute") return "high";
+  if (priorite === "moyenne") return "med";
+  return "low";
+}
+
+async function hydrateSitesFromApi() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/mesures/latest-per-site`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error("Aucune donnée API");
+
+    const fallbackBySiteId = new Map(STATIC_SITES.map(s => [s.id + 1, s]));
+
+    SITES = rows.map((r, idx) => {
+      const base = fallbackBySiteId.get(r.site_id) || STATIC_SITES[idx % STATIC_SITES.length];
+      const ndwi = toNum(r.ndwi, toNum(base.ndwi, 0));
+      return {
+        ...base,
+        id: toNum(r.site_id, idx + 1) - 1,
+        nom: r.site_nom || base.nom,
+        dep: r.departement || base.dep,
+        surf: toNum(r.superficie_ha, base.surf),
+        score: toNum(r.score_total, base.score),
+        ndwi,
+        ndvi: toNum(r.ndvi, base.ndvi),
+        ph: toNum(r.ph_sol, base.ph),
+        pluie7: toNum(r.pluie_7j_mm, base.pluie7),
+        hum: toNum(r.humidite_sol, base.hum),
+        cls: mapPrioriteToCls(r.priorite),
+        history: [
+          {d:"Oct",v:ndwi-0.10},
+          {d:"Nov",v:ndwi+0.05},
+          {d:"Déc",v:ndwi+0.08},
+          {d:"Jan",v:ndwi-0.02},
+          {d:"Fév",v:ndwi-0.05},
+          {d:"Act",v:ndwi}
+        ],
+        rec: base.rec || "Observation terrain recommandée."
+      };
+    });
+
+    const badge = document.getElementById("data-badge");
+    badge.textContent = "DONNÉES API LIVE";
+    badge.classList.add("live");
+  } catch (err) {
+    console.warn("API indisponible, fallback statique :", err);
+    SITES = STATIC_SITES.map(s => ({...s, history:[...s.history]}));
+  }
+}
+
+// ═══ RENDU CARTE ═══
+function renderDots() {
+  const ls = document.getElementById("layer-sites");
+  const lo = document.getElementById("layer-osm");
+  ls.innerHTML = ""; lo.innerHTML = "";
+
+  // Sites bas-fonds
+  SITES.forEach(s => {
+    const show = curF==="all"||curF===s.cls||(curF==="osm"&&false);
+    if (!show) return;
+    const col = COL[s.cls];
+    const r   = s.score >= 60 ? 6 : s.score >= 45 ? 5 : 4;
+
+    const hl = mkCircle(s.cx, s.cy, r+4, col, "0.15");
+    ls.appendChild(hl);
+
+    const dot = mkCircle(s.cx, s.cy, r, col, "0.92");
+    dot.setAttribute("stroke","white"); dot.setAttribute("stroke-width","0.9");
+    dot.style.cursor = "pointer";
+    dot.addEventListener("click", e => { e.stopPropagation(); cDotSite(s.id); });
+    dot.addEventListener("mouseenter", function(){ this.setAttribute("r", r+2); });
+    dot.addEventListener("mouseleave", function(){ if(curSite!==s.id)this.setAttribute("r",r); });
+    ls.appendChild(dot);
+  });
+
+  // Points OSM
+  if (curF === "all" || curF === "osm") {
+    OSM_POINTS.forEach(p => {
+      const col = OSMCOL[p.type] || "#888780";
+      const dot = mkCircle(p.cx, p.cy, 3, col, "0.75");
+      dot.setAttribute("stroke","white"); dot.setAttribute("stroke-width","0.6");
+      dot.style.cursor = "pointer";
+      dot.addEventListener("click", e => { e.stopPropagation(); cDotOSM(p); });
+      lo.appendChild(dot);
+    });
+  }
+}
+
+function renderGrille() {
+  const lg = document.getElementById("layer-grille");
+  lg.innerHTML = "";
+  if (!showGrille) return;
+
+  // Données API disponibles → utiliser les vraies zones
+  if (GRILLE_BASFONDS.length > 0) {
+    GRILLE_BASFONDS.forEach(p => {
+      if (!p.lat || !p.lon) return;
+
+      // Filtre département actif
+      if (curDep && p.departement !== curDep) return;
+
+      const cx  = lonToX(parseFloat(p.lon));
+      const cy  = latToY(parseFloat(p.lat));
+      const col = p.priorite === "haute"   ? "#639922"
+                : p.priorite === "moyenne" ? "#ba7517"
+                :                            "#e24b4a";
+
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x", cx - 4); rect.setAttribute("y", cy - 3);
+      rect.setAttribute("width", 8);  rect.setAttribute("height", 6);
+      rect.setAttribute("fill", col); rect.setAttribute("opacity", "0.30");
+      rect.setAttribute("rx", "1");
+      rect.style.cursor = "pointer";
+      rect.setAttribute("title", `${p.departement || ''} — Score ${p.score_total || '—'}`);
+      rect.addEventListener("click", e => {
+        e.stopPropagation();
+        afficherDetailGrille(p);
+      });
+      lg.appendChild(rect);
+    });
+    return;
+  }
+
+  // Fallback statique si l'API n'a pas encore de grille
+  const humides = [
+    {cx:168,cy:36},{cx:110,cy:96},{cx:96,cy:70},{cx:120,cy:130},
+    {cx:36,cy:318},{cx:120,cy:396},{cx:68,cy:340}
+  ];
+  humides.forEach(h => {
+    const r = document.createElementNS("http://www.w3.org/2000/svg","rect");
+    r.setAttribute("x", h.cx-5); r.setAttribute("y", h.cy-4);
+    r.setAttribute("width",10); r.setAttribute("height",8);
+    r.setAttribute("fill","#639922"); r.setAttribute("opacity","0.22");
+    r.setAttribute("rx","1");
+    lg.appendChild(r);
+  });
+}
+
+function afficherDetailGrille(p) {
+  const prioriteCls = p.priorite === "haute" ? "bg-g" : p.priorite === "moyenne" ? "bg-a" : "bg-r";
+  const prioriteLbl = p.priorite === "haute" ? "Haute priorité" : p.priorite === "moyenne" ? "Priorité moyenne" : "À étudier";
+  document.getElementById("det-content").innerHTML = `
+    <button class="det-back" onclick="backToDep()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 3L5 6.5l3 3.5"/></svg>
+      Grille nationale
+    </button>
+    <div class="det-top">
+      <div class="det-name">Zone ${p.departement || '—'}</div>
+      <div class="badge ${prioriteCls}">${prioriteLbl}</div>
+    </div>
+    <div class="kgrid">
+      <div class="kpi"><div class="kpiv">${p.score_total ?? '—'}</div><div class="kpil">Score /100</div></div>
+      <div class="kpi"><div class="kpiv">${p.twi ?? '—'}</div><div class="kpil">TWI (relief)</div></div>
+      <div class="kpi"><div class="kpiv">${p.elevation_m ?? '—'}</div><div class="kpil">Altitude (m)</div></div>
+      <div class="kpi"><div class="kpiv">${p.ndwi != null ? (p.ndwi >= 0 ? '+' : '') + Number(p.ndwi).toFixed(3) : '—'}</div><div class="kpil">NDWI satellite</div></div>
+    </div>
+    <div class="sec">Coordonnées</div>
+    <div class="kgrid" style="margin-bottom:12px">
+      <div class="kpi"><div class="kpiv" style="font-size:14px">${Number(p.lat).toFixed(4)}</div><div class="kpil">Latitude</div></div>
+      <div class="kpi"><div class="kpiv" style="font-size:14px">${Number(p.lon).toFixed(4)}</div><div class="kpil">Longitude</div></div>
+    </div>
+    <div class="sec">Sol & Météo</div>
+    <div class="kgrid" style="margin-bottom:12px">
+      <div class="kpi"><div class="kpiv">${p.ph_sol ?? '—'}</div><div class="kpil">pH sol</div></div>
+      <div class="kpi"><div class="kpiv">${p.pluie_30j_mm ?? '—'}</div><div class="kpil">Pluie 30j (mm)</div></div>
+      <div class="kpi"><div class="kpiv">${p.humidite_sol != null ? Math.round(p.humidite_sol * 100) + '%' : '—'}</div><div class="kpil">Humidité sol</div></div>
+      <div class="kpi"><div class="kpiv">${p.temp_max_c ?? '—'}</div><div class="kpil">Temp. max (°C)</div></div>
+    </div>
+    <div class="sec">Statut analyse</div>
+    <div class="recbox ${p.est_bas_fond ? 'g' : 'r'}">
+      ${p.est_bas_fond
+        ? 'Zone identifiée comme bas-fond potentiel (TWI élevé). Confirmation satellite recommandée.'
+        : 'Zone non classée bas-fond. Relancer avec satellite pour affiner.'}
+      <br><small style="opacity:.7">Analysé le ${p.date_analyse || '—'} · Source NDWI : ${p.source_ndwi || 'non collecté'}</small>
+    </div>
+  `;
+  showV("site");
+}
+
+function mkCircle(cx,cy,r,fill,opacity) {
+  const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c.setAttribute("cx",cx); c.setAttribute("cy",cy);
+  c.setAttribute("r",r); c.setAttribute("fill",fill);
+  c.setAttribute("opacity",opacity||"1");
+  return c;
+}
+
+// ═══ NAVIGATION ═══
+function goHome() {
+  document.querySelectorAll(".dep").forEach(d=>d.classList.remove("sel"));
+  curDep = null; curSite = null;
+  showV("home");
+  renderDots();
+}
+
+function cDep(name) {
+  document.querySelectorAll(".dep").forEach(d=>d.classList.remove("sel"));
+  const el = document.getElementById("dp-"+name);
+  if (el) el.classList.add("sel");
+  curDep = name; curSite = null;
+  renderDepView(name);
+  showV("dep");
+  renderDots();
+}
+
+function renderDepView(name) {
+  const sites = SITES.filter(s => s.dep===name && (curF==="all"||curF===s.cls||curF==="osm"))
+                     .sort((a,b)=>b.ndwi-a.ndwi);
+  const osmP  = OSM_POINTS.filter(p => p.dep===name);
+
+  document.getElementById("dep-name").textContent = name;
+  document.getElementById("dep-meta").textContent =
+    `${SITES.filter(s=>s.dep===name).length} bas-fond(s) · ${osmP.length} point(s) eau OSM`;
+
+  // Liste sites
+  const sl = document.getElementById("site-list");
+  sl.innerHTML = sites.length === 0
+    ? `<div style="padding:20px 16px;font-size:13px;color:var(--text3);text-align:center">Aucun bas-fond pour ce filtre</div>`
+    : sites.map(s => `
+      <div class="srow${curSite===s.id?' on':''}" id="sr-${s.id}" onclick="cSite(${s.id})">
+        <div class="sr-dot" style="background:${COL[s.cls]}"></div>
+        <div class="sr-info">
+          <div class="sr-name">${s.nom}</div>
+          <div class="sr-sub">${s.surf} ha · NDWI ${s.ndwi>=0?'+':''}${s.ndwi.toFixed(3)} · ${s.cost}M FCFA</div>
+        </div>
+        <div class="sr-sc c${s.cls[0]}">${s.ndwi>=0?'+':''}${s.ndwi.toFixed(2)}</div>
+      </div>`).join("");
+
+  // Liste OSM
+  const ol = document.getElementById("osm-list");
+  ol.innerHTML = osmP.length === 0
+    ? `<div style="padding:20px 16px;font-size:13px;color:var(--text3);text-align:center">Aucun point eau OSM pour ce département<br><span style="font-size:11px">Lancer : python collect/osm.py</span></div>`
+    : osmP.map(p => `
+      <div class="srow" onclick="showOSMDetail(${p.id})">
+        <div class="sr-dot" style="background:${OSMCOL[p.type]||'#888'}"></div>
+        <div class="sr-info">
+          <div class="sr-name">${p.nom||'Sans nom'}</div>
+          <div class="sr-sub">${p.type.replace("_"," ")} · OSM #${p.id}</div>
+        </div>
+        <div style="font-size:10px;font-family:var(--mono);color:var(--text3)">OSM</div>
+      </div>`).join("");
+}
+
+function swITab(tab) {
+  curITab = tab;
+  document.getElementById("itab-sites").classList.toggle("on", tab==="sites");
+  document.getElementById("itab-osm").classList.toggle("on", tab==="osm");
+  document.getElementById("site-list").style.display = tab==="sites" ? "" : "none";
+  document.getElementById("osm-list").style.display  = tab==="osm"  ? "" : "none";
+}
+
+function cDotSite(id) {
+  const s = SITES.find(x=>x.id===id);
+  if (!s) return;
+  if (curDep !== s.dep) cDep(s.dep);
+  cSite(id);
+}
+
+function cSite(id) {
+  curSite = id;
+  const s = SITES.find(x=>x.id===id);
+  document.querySelectorAll(".srow").forEach(r=>r.classList.remove("on"));
+  const sr = document.getElementById("sr-"+id);
+  if (sr) { sr.classList.add("on"); sr.scrollIntoView({behavior:"smooth",block:"nearest"}); }
+  renderSiteDetail(s);
+  showV("site");
+}
+
+function renderSiteDetail(s) {
+  const ndwiPct = Math.round(Math.min(100, Math.max(0, (s.ndwi+1)/2*100)));
+  const ndviPct = Math.round(Math.min(100, Math.max(0, (s.ndvi+1)/2*100)));
+  const phScore = Math.round(Math.max(0, 100-Math.abs(s.ph-6.5)*30));
+  const col     = COL[s.cls];
+
+  const chart = renderChart(s);
+
+  document.getElementById("det-content").innerHTML = `
+    <button class="det-back" onclick="backToDep()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 3L5 6.5l3 3.5"/></svg>
+      ${s.dep}
+    </button>
+    <div class="det-top">
+      <div class="det-name">${s.nom}</div>
+      <div class="badge ${BGCLS[s.cls]}">${BGLBL[s.cls]}</div>
+    </div>
+    <div class="kgrid">
+      <div class="kpi"><div class="kpiv">${s.surf}</div><div class="kpil">Superficie (ha)</div></div>
+      <div class="kpi"><div class="kpiv" style="color:${col}">${s.ndwi>=0?'+':''}${s.ndwi.toFixed(3)}</div><div class="kpil">NDWI actuel</div></div>
+      <div class="kpi"><div class="kpiv">${s.ph}</div><div class="kpil">pH sol (ISRIC)</div></div>
+      <div class="kpi"><div class="kpiv">${s.cost}M</div><div class="kpil">Coût activ. FCFA</div></div>
+    </div>
+
+    <div class="sec">Indices satellites — ${new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</div>
+    <div class="bwrap">
+      <div class="bhead"><span>NDWI humidité sol</span><span>${s.ndwi>=0?'+':''}${s.ndwi.toFixed(3)}</span></div>
+      <div class="btrack"><div class="bfill" style="width:${ndwiPct}%;background:${col}"></div></div>
+    </div>
+    <div class="bwrap">
+      <div class="bhead"><span>NDVI végétation</span><span>+${s.ndvi.toFixed(3)}</span></div>
+      <div class="btrack"><div class="bfill" style="width:${ndviPct}%;background:#378add"></div></div>
+    </div>
+    <div class="bwrap" style="margin-bottom:13px">
+      <div class="bhead"><span>Fertilité sol pH ${s.ph}</span><span>${phScore}/100</span></div>
+      <div class="btrack"><div class="bfill" style="width:${phScore}%;background:#1d9e75"></div></div>
+    </div>
+
+    <div class="sec">Météo récente</div>
+    <div class="kgrid" style="margin-bottom:13px">
+      <div class="kpi"><div class="kpiv">${s.pluie7.toFixed(1)}</div><div class="kpil">Pluie 7j (mm)</div></div>
+      <div class="kpi"><div class="kpiv">${Math.round(s.hum*100)}%</div><div class="kpil">Humidité sol</div></div>
+    </div>
+
+    <div class="chwrap">
+      <div class="ch-t">Historique NDWI — série temporelle</div>
+      ${chart}
+      <div class="ch-note">Sources : Sentinel-2 via Google Earth Engine · données réelles collectées</div>
+    </div>
+
+    <div class="sec">Sources collectées</div>
+    <div class="srcs">
+      <div class="src ok"><div class="sdot"></div>Sentinel-2 (GEE)</div>
+      <div class="src ok"><div class="sdot"></div>ISRIC SoilGrids</div>
+      <div class="src ok"><div class="sdot"></div>Open-Meteo</div>
+      <div class="src no"><div class="sdot"></div>OSM waterways</div>
+      <div class="src no"><div class="sdot"></div>SRTM relief</div>
+      <div class="src no"><div class="sdot"></div>CHIRPS 40ans</div>
+    </div>
+
+    <div class="sec">Recommandation</div>
+    <div class="recbox ${s.cls[0]}">${s.rec}</div>
+  `;
+}
+
+function renderChart(s) {
+  const W=280, H=70, PL=28, PB=16, PR=6, PT=4;
+  const vals = s.history.map(p=>p.v);
+  const maxV = Math.max(...vals, 0.2);
+  const minV = Math.min(...vals, -0.5);
+  const rng  = maxV - minV || 0.1;
+  const n    = s.history.length;
+  const xS   = (W-PL-PR)/(n-1);
+  const xA   = i => PL + i*xS;
+  const yA   = v => PT + (1-(v-minV)/rng)*(H-PT-PB);
+  const col  = COL[s.cls];
+
+  let pathF = `M${xA(0)},${yA(minV)}`;
+  s.history.forEach((p,i) => { pathF += ` L${xA(i)},${yA(p.v)}`; });
+  pathF += ` L${xA(n-1)},${yA(minV)} Z`;
+
+  let pathL = s.history.map((p,i)=>(i===0?"M":"L")+xA(i)+","+yA(p.v)).join(" ");
+
+  // Ligne zéro
+  const y0 = yA(0);
+  const zero = (y0 > PT && y0 < H-PB)
+    ? `<line x1="${PL}" y1="${y0}" x2="${W-PR}" y2="${y0}" stroke="#e2dfd8" stroke-width=".8" stroke-dasharray="3 2"/>`
+    : "";
+
+  // Labels X
+  const labels = s.history.map((p,i) => `<text x="${xA(i)}" y="${H}" text-anchor="middle" font-size="8.5" fill="#9a9a94" font-family="sans-serif">${p.d}</text>`).join("");
+
+  // Labels Y
+  const yLabels = [minV,(minV+maxV)/2,maxV].map(v =>
+    `<text x="${PL-3}" y="${yA(v)+3}" text-anchor="end" font-size="7.5" fill="#9a9a94" font-family="monospace">${v>=0?"+":""}${v.toFixed(2)}</text>`
+  ).join("");
+
+  // Dernier point
+  const last = s.history[n-1];
+  const lx = xA(n-1), ly = yA(last.v);
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;overflow:visible">
+    <path d="${pathF}" fill="${col}" opacity=".12"/>
+    ${zero}
+    <path d="${pathL}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lx}" cy="${ly}" r="3.5" fill="${col}" stroke="white" stroke-width="1.2"/>
+    ${labels}${yLabels}
+  </svg>`;
+}
+
+function cDotOSM(p) {
+  if (p.dep !== curDep) cDep(p.dep);
+  swITab("osm");
+  showOSMDetail(p.id);
+}
+
+function showOSMDetail(id) {
+  const p = OSM_POINTS.find(x=>x.id===id);
+  if (!p) return;
+  const col = OSMCOL[p.type] || "#888";
+  document.getElementById("det-content").innerHTML = `
+    <button class="det-back" onclick="backToDep()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 3L5 6.5l3 3.5"/></svg>
+      ${p.dep}
+    </button>
+    <div class="det-top">
+      <div class="det-name">${p.nom||"Point d'eau sans nom"}</div>
+      <div class="badge bg-b">${p.type.replace("_"," ")}</div>
+    </div>
+    <div class="kgrid">
+      <div class="kpi"><div class="kpiv" style="color:${col}">${p.type.replace("_"," ")}</div><div class="kpil">Type OSM</div></div>
+      <div class="kpi"><div class="kpiv">${p.lat.toFixed(4)}</div><div class="kpil">Latitude</div></div>
+      <div class="kpi"><div class="kpiv">${p.lon.toFixed(4)}</div><div class="kpil">Longitude</div></div>
+      <div class="kpi"><div class="kpiv" style="font-size:14px">#${p.id}</div><div class="kpil">ID OpenStreetMap</div></div>
+    </div>
+    <div class="sec">Source</div>
+    <div class="srcs">
+      <div class="src ok"><div class="sdot"></div>OpenStreetMap</div>
+      <div class="src no"><div class="sdot"></div>Sentinel-2 (à croiser)</div>
+    </div>
+    <div class="sec" style="margin-top:8px">Action recommandée</div>
+    <div class="recbox" style="border-left-color:${col}">Croiser ce point OSM avec le NDWI satellite et les données SRTM (relief) pour estimer le potentiel irrigable. Lancer : <code>python collect/osm.py</code> pour enrichir la base avec tous les points du Bénin.</div>
+  `;
+  showV("site");
+}
+
+function backToDep() {
+  curSite = null;
+  showV("dep");
+  if (curDep) renderDepView(curDep);
+}
+
+function showV(name) {
+  ["home","dep","site"].forEach(v => {
+    document.getElementById("v-"+v).classList.toggle("on", v===name);
+  });
+}
+
+function setF(f, btn) {
+  curF = f;
+  document.querySelectorAll(".fb").forEach(b=>b.className="fb");
+  btn.className = "fb on-"+({all:"all",high:"g",med:"a",low:"r",osm:"b"}[f]||"all");
+  curSite = null;
+  renderDots();
+  if (curDep) renderDepView(curDep);
+}
+
+function toggleGrille(on) {
+  showGrille = on;
+  renderGrille();
+}
+
+// ═══ INIT ═══
+async function init() {
+  await hydrateSitesFromApi();
+  await chargerGrille();
+  renderDots();
+  renderGrille();
+  // Màj compteurs header
+  document.getElementById("h-total").textContent = "1 860";
+  document.getElementById("h-sites").textContent = SITES.length;
+  document.getElementById("h-osm").textContent   = OSM_POINTS.length + "*";
+  const avgScore = SITES.length ? (SITES.reduce((a,s)=>a+toNum(s.score,0),0)/SITES.length) : 0;
+  document.getElementById("h-score").textContent = avgScore.toFixed(1);
+  document.querySelector(".hkv.a").textContent = avgScore.toFixed(1);
+}
+
+init();
+</script>
+</body>
+</html>

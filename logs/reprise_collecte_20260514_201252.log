@@ -1,0 +1,56 @@
+=== Reprise collecte BAM — log: logs/reprise_collecte_20260514_201252.log ===
+
+########################################
+### Alibori
+########################################
+--- Communes (GeoJSON) ---
+7053 points a traiter pour Alibori
+6 communes candidates
+  1000/7053
+  2000/7053
+  3000/7053
+  4000/7053
+  5000/7053
+  6000/7053
+  7000/7053
+✓ Assignes: 5262/7053
+--- Relief / sol / météo / TWI ---
+============================================================
+  BAM · Enrichissement grille nationale · 2026-05-14
+  Filtre département : Alibori
+============================================================
+✓ Tous les points ont déjà été enrichis.
+  Pour ré-analyser : --reset-dept <NomDept>
+--- Satellite GEE (points ndwi NULL seulement) ---
+====================================================
+  BAM · Analyse grille nationale · 2026-05-14
+  Seuil NDWI : 0.2 (au-dessus = zone humide)
+  Département : Alibori
+  Sources satellites : ['gee']
+====================================================
+  0 points sans NDWI satellite à analyser
+
+✓ Aucun point à traiter (NDWI déjà renseigné partout pour ce filtre)
+
+########################################
+### Atacora
+########################################
+--- Communes (GeoJSON) ---
+7602 points a traiter pour Atacora
+77 communes candidates
+  1000/7602
+  2000/7602
+  3000/7602
+  4000/7602
+  5000/7602
+  6000/7602
+  7000/7602
+✓ Assignes: 4230/7602
+--- Relief / sol / météo / TWI ---
+============================================================
+  BAM · Enrichissement grille nationale · 2026-05-14
+  Filtre département : Atacora
+============================================================
+✓ Tous les points ont déjà été enrichis.
+  Pour ré-analyser : --reset-dept <NomDept>
+--- Satellite GEE (points ndwi NULL seulement) ---

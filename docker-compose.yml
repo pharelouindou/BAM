@@ -1,0 +1,45 @@
+
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bam-postgres
+    environment:
+      POSTGRES_DB:       bam_local
+      POSTGRES_USER:     bam_user
+      POSTGRES_PASSWORD: bam_dev_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./db/seeds.sql:/docker-entrypoint-initdb.d/02_seeds.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bam_user -d bam_local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:10.3.0
+    container_name: bam-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: grafana-postgresql-datasource-2dmin
+      GF_USERS_ALLOW_SIGN_UP:     "false"
+      GRAFANA_DB_HOST: ${GRAFANA_DB_HOST}
+      GRAFANA_DB_NAME: ${GRAFANA_DB_NAME}
+      GRAFANA_DB_USER: ${GRAFANA_DB_USER}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD}
+      GRAFANA_DB_SSLMODE: ${GRAFANA_DB_SSLMODE}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  grafana_data:
