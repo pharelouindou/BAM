@@ -1,31 +1,46 @@
-databases:
-  - name: bam-postgres
-    databaseName: bam_db
-    user: bam_user
-    plan: free           # passer en "starter" pour la production
+# BAM · Render Blueprint
+# DB : Neon (externe) — DATABASE_URL renseignée manuellement sur chaque service.
+# Scheduling : Render Cron Job (gratuit, pas de worker 24/7 ni Prefect Cloud).
 
 services:
   # ── API FastAPI ──────────────────────────────────────────────────────────────
-  # Le pipeline (main.py) est géré par Prefect — pas de cron job Render.
   - type: web
     name: bam-api
     runtime: python
-    plan: free            # passer en "starter" pour la production
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn api.app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: bam-postgres
-          property: connectionString
+        sync: false       # connection string Neon (déjà configurée sur BAM)
       - key: GEE_PROJECT
-        sync: false       # à renseigner manuellement dans le dashboard Render
+        sync: false
       - key: GEE_SERVICE_ACCOUNT_JSON
-        sync: false       # contenu JSON du compte de service GEE (voir docs/gee_service_account.md)
+        sync: false
       - key: NASA_USERNAME
         sync: false
       - key: NASA_PASSWORD
         sync: false
-      - key: ANTHROPIC_API_KEY
+
+  # ── Collecte hebdomadaire (Render Cron) ─────────────────────────────────────
+  # Lundi 07h05 UTC = 08h05 heure Bénin (UTC+1). Render exécute en UTC.
+  # Durée : ~plusieurs heures (12 départements). Surveiller les logs Render.
+  - type: cron
+    name: bam-collecte-hebdo
+    runtime: python
+    plan: free
+    schedule: "5 7 * * 1"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -u scripts/run_collecte_hebdo.py
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GEE_PROJECT
+        sync: false
+      - key: GEE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: NASA_USERNAME
+        sync: false
+      - key: NASA_PASSWORD
         sync: false

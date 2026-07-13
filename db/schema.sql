@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS indices (
     categorie     TEXT NOT NULL
         CHECK(categorie IN ('satellite', 'sol', 'meteo', 'pluie')),
 
-
+    nom_indice    TEXT NOT NULL,   -- ndwi, ndvi, ph_sol, pluie_7j_mm, …
     valeur        NUMERIC(10,4),
 
     -- Traçabilité

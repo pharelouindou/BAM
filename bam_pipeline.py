@@ -67,8 +67,9 @@ def collecte_bam(depts: list[str] = DEPTS):
         analyser_grille(dept)
 
 if __name__ == "__main__":
+    # Local uniquement : scheduler embarqué Prefect (pas de Cloud requis).
+    # En prod Render → scripts/run_collecte_hebdo.py via Cron Job.
     collecte_bam.serve(
         name="bam-collecte-hebdo",
-        cron="5 8 * * 1"  # Tous les lundis à 08h05 (heure du worker)
-
+        cron="5 7 * * 1"  # Lundi 07h05 UTC = 08h05 Bénin (UTC+1)
     )
